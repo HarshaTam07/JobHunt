@@ -9,7 +9,8 @@ import {
   LearningItem, 
   Note,
   Todo,
-  InterviewQuestion
+  InterviewQuestion,
+  Project
 } from '@/types';
 
 // Helper function to transform database row to app format
@@ -289,6 +290,25 @@ export const documentApi = {
         file_name: document.fileName,
         uploaded_at: document.uploadedAt,
       })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return transformDocument(data);
+  },
+
+  update: async (id: string, updates: Partial<Document>): Promise<Document> => {
+    const updateData: any = {};
+    if (updates.name) updateData.name = updates.name;
+    if (updates.type) updateData.type = updates.type;
+    if (updates.fileUrl) updateData.file_url = updates.fileUrl;
+    if (updates.fileName) updateData.file_name = updates.fileName;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('documents')
+      .update(updateData)
+      .eq('id', id)
       .select()
       .single();
     
@@ -749,7 +769,80 @@ export const interviewQuestionApi = {
       .from('interview_questions')
       .delete()
       .eq('id', id);
-    
+
+    if (error) throw error;
+  },
+};
+
+// Project APIs
+const transformProject = (row: any): Project => ({
+  id: row.id,
+  name: row.name,
+  description: row.description || undefined,
+  problemStatement: row.problem_statement || undefined,
+  githubLink: row.github_link,
+  files: row.files || [],
+  metadata: row.metadata || {},
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+export const projectApi = {
+  getAll: async (): Promise<Project[]> => {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data.map(transformProject);
+  },
+
+  create: async (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project> => {
+    const { data, error } = await supabase
+      .from('projects')
+      .insert({
+        name: project.name,
+        description: project.description || null,
+        problem_statement: project.problemStatement || null,
+        github_link: project.githubLink,
+        files: project.files || [],
+        metadata: project.metadata || {},
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return transformProject(data);
+  },
+
+  update: async (id: string, updates: Partial<Project>): Promise<Project> => {
+    const updateData: any = {};
+    if (updates.name) updateData.name = updates.name;
+    if (updates.description !== undefined) updateData.description = updates.description || null;
+    if (updates.problemStatement !== undefined) updateData.problem_statement = updates.problemStatement || null;
+    if (updates.githubLink) updateData.github_link = updates.githubLink;
+    if (updates.files !== undefined) updateData.files = updates.files;
+    if (updates.metadata !== undefined) updateData.metadata = updates.metadata || {};
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('projects')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return transformProject(data);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', id);
+
     if (error) throw error;
   },
 };

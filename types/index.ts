@@ -201,3 +201,22 @@ export type InterviewTechnology =
   | "microservices"
   | "other";
 
+export interface ProjectFile {
+  name: string;
+  url: string;
+  size?: number;
+  type?: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  problemStatement?: string;
+  githubLink: string;
+  files: ProjectFile[];
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+

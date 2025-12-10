@@ -10,6 +10,7 @@ import {
   noteApi,
   todoApi,
   interviewQuestionApi,
+  projectApi,
 } from './api';
 import {
   Resume,
@@ -22,6 +23,7 @@ import {
   Note,
   Todo,
   InterviewQuestion,
+  Project,
 } from '@/types';
 
 // Storage keys (kept for backward compatibility, but now using Supabase)
@@ -37,6 +39,7 @@ export const STORAGE_KEYS = {
   NOTES: "notes",
   TODOS: "todos",
   INTERVIEW_QUESTIONS: "interview_questions",
+  PROJECTS: "projects",
 } as const;
 
 // Cache for storing data to reduce API calls
@@ -51,6 +54,7 @@ const cache: {
   notes?: Note[];
   todos?: Todo[];
   interview_questions?: InterviewQuestion[];
+  projects?: Project[];
 } = {};
 
 export class Storage {
@@ -166,6 +170,17 @@ export class Storage {
       return newDoc;
     } catch (error) {
       console.error('Error creating document:', error);
+      throw error;
+    }
+  }
+
+  static async updateDocument(id: string, updates: Partial<Document>): Promise<Document> {
+    try {
+      const updated = await documentApi.update(id, updates);
+      cache.documents = undefined; // Clear cache
+      return updated;
+    } catch (error) {
+      console.error('Error updating document:', error);
       throw error;
     }
   }
@@ -516,5 +531,50 @@ export class Storage {
     Object.keys(cache).forEach(key => {
       delete cache[key as keyof typeof cache];
     });
+  }
+
+  // Project operations
+  static async getProjects(): Promise<Project[]> {
+    try {
+      if (!cache.projects) {
+        cache.projects = await projectApi.getAll();
+      }
+      return cache.projects || [];
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      return [];
+    }
+  }
+
+  static async setProject(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project> {
+    try {
+      const newProject = await projectApi.create(project);
+      cache.projects = undefined; // Clear cache
+      return newProject;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
+  }
+
+  static async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
+    try {
+      const updated = await projectApi.update(id, updates);
+      cache.projects = undefined; // Clear cache
+      return updated;
+    } catch (error) {
+      console.error('Error updating project:', error);
+      throw error;
+    }
+  }
+
+  static async deleteProject(id: string): Promise<void> {
+    try {
+      await projectApi.delete(id);
+      cache.projects = undefined; // Clear cache
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      throw error;
+    }
   }
 }
