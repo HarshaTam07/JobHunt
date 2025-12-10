@@ -7,6 +7,7 @@ import {
   contactApi,
   recruiterCallApi,
   learningItemApi,
+  noteApi,
 } from './api';
 import {
   Resume,
@@ -16,6 +17,7 @@ import {
   Contact,
   RecruiterCall,
   LearningItem,
+  Note,
 } from '@/types';
 
 // Storage keys (kept for backward compatibility, but now using Supabase)
@@ -28,6 +30,7 @@ export const STORAGE_KEYS = {
   RECRUITER_CALLS: "recruiter_calls",
   LEARNING_ITEMS: "learning_items",
   INTERVIEW_PREP: "interview_prep",
+  NOTES: "notes",
 } as const;
 
 // Cache for storing data to reduce API calls
@@ -39,6 +42,7 @@ const cache: {
   contacts?: Contact[];
   recruiter_calls?: RecruiterCall[];
   learning_items?: LearningItem[];
+  notes?: Note[];
 } = {};
 
 export class Storage {
@@ -344,6 +348,51 @@ export class Storage {
       cache.learning_items = undefined; // Clear cache
     } catch (error) {
       console.error('Error deleting learning item:', error);
+      throw error;
+    }
+  }
+
+  // Note operations
+  static async getNotes(): Promise<Note[]> {
+    try {
+      if (!cache.notes) {
+        cache.notes = await noteApi.getAll();
+      }
+      return cache.notes;
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+      return [];
+    }
+  }
+
+  static async setNote(note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>): Promise<Note> {
+    try {
+      const newNote = await noteApi.create(note);
+      cache.notes = undefined; // Clear cache
+      return newNote;
+    } catch (error) {
+      console.error('Error creating note:', error);
+      throw error;
+    }
+  }
+
+  static async updateNote(id: string, updates: Partial<Note>): Promise<Note> {
+    try {
+      const updated = await noteApi.update(id, updates);
+      cache.notes = undefined; // Clear cache
+      return updated;
+    } catch (error) {
+      console.error('Error updating note:', error);
+      throw error;
+    }
+  }
+
+  static async deleteNote(id: string): Promise<void> {
+    try {
+      await noteApi.delete(id);
+      cache.notes = undefined; // Clear cache
+    } catch (error) {
+      console.error('Error deleting note:', error);
       throw error;
     }
   }

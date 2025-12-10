@@ -6,7 +6,8 @@ import {
   Link, 
   Contact, 
   RecruiterCall, 
-  LearningItem 
+  LearningItem,
+  Note
 } from '@/types';
 
 // Helper function to transform database row to app format
@@ -90,6 +91,14 @@ const transformLearningItem = (row: any): LearningItem => ({
   notes: row.notes,
   startedDate: row.started_date,
   completedDate: row.completed_date,
+});
+
+const transformNote = (row: any): Note => ({
+  id: row.id,
+  title: row.title,
+  content: row.content,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
 });
 
 // Resume APIs
@@ -524,6 +533,59 @@ export const learningItemApi = {
   delete: async (id: string): Promise<void> => {
     const { error } = await supabase
       .from('learning_items')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+};
+
+// Note APIs
+export const noteApi = {
+  getAll: async (): Promise<Note[]> => {
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data.map(transformNote);
+  },
+
+  create: async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>): Promise<Note> => {
+    const { data, error } = await supabase
+      .from('notes')
+      .insert({
+        title: note.title,
+        content: note.content,
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return transformNote(data);
+  },
+
+  update: async (id: string, updates: Partial<Note>): Promise<Note> => {
+    const updateData: any = {};
+    if (updates.title) updateData.title = updates.title;
+    if (updates.content !== undefined) updateData.content = updates.content;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('notes')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return transformNote(data);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('notes')
       .delete()
       .eq('id', id);
     

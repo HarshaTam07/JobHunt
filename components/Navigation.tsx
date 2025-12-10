@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Briefcase, Link as LinkIcon, FolderOpen, BookOpen, Phone, Users, Home, Menu, X, Sun, Moon } from "lucide-react";
+import { FileText, Briefcase, Link as LinkIcon, FolderOpen, BookOpen, Phone, Users, Home, Menu, X, Sun, Moon, StickyNote } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -20,18 +20,19 @@ export default function Navigation() {
     { href: "/contacts", icon: Users, label: "Contacts" },
     { href: "/learning", icon: BookOpen, label: "Learning" },
     { href: "/calls", icon: Phone, label: "Calls" },
+    { href: "/notes", icon: StickyNote, label: "Notes" },
   ];
 
   return (
     <nav className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex">
+          <div className="flex flex-1 min-w-0">
             <div className="flex-shrink-0 flex items-center">
-              <Briefcase className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-              <span className="ml-2 text-xl font-bold text-gray-900 dark:text-gray-100">Job Hunt Manager</span>
+              <Briefcase className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
+              <span className="ml-1 sm:ml-2 text-base sm:text-xl font-bold text-gray-900 dark:text-gray-100 hidden lg:inline">Job Hunt Manager</span>
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+            <div className="hidden sm:ml-2 md:ml-4 sm:flex sm:space-x-2 md:space-x-3 lg:space-x-4 flex-1 min-w-0">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -43,13 +44,13 @@ export default function Navigation() {
               })}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <button
               onClick={toggleTheme}
-              className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-1.5 sm:p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               aria-label="Toggle dark mode"
             >
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              {theme === "dark" ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
             </button>
             <div className="sm:hidden">
               <button
@@ -101,13 +102,13 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors ${
+      className={`inline-flex items-center px-0.5 sm:px-1 pt-1 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
         isActive
           ? "text-blue-600 dark:text-blue-400 border-blue-500 dark:border-blue-400"
           : "text-gray-700 dark:text-gray-300 border-transparent hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500 dark:hover:border-blue-400"
       }`}
     >
-      <span className="mr-1">{icon}</span>
+      <span className="mr-0.5 sm:mr-1">{icon}</span>
       {children}
     </Link>
   );
