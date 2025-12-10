@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Download, Trash2, Upload, FileText } from "lucide-react";
+import { Plus, Download, Trash2, Upload, FileText, Eye, X, Edit } from "lucide-react";
 import { Storage, STORAGE_KEYS } from "@/lib/storage";
 import { Resume, ResumeType } from "@/types";
 import { formatDate, getResumeTypeLabel } from "@/lib/utils";
@@ -11,6 +11,10 @@ export default function ResumesPage() {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [showUpload, setShowUpload] = useState(false);
   const [selectedType, setSelectedType] = useState<ResumeType>("java-react-aws");
+  const [viewingResume, setViewingResume] = useState<Resume | null>(null);
+  const [editingResume, setEditingResume] = useState<Resume | null>(null);
+  const [customName, setCustomName] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     loadResumes();
@@ -26,31 +30,69 @@ export default function ResumesPage() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSelectedFile(file);
+    // Auto-generate name if not already set
+    if (!customName) {
+      setCustomName(`${getResumeTypeLabel(selectedType)} - ${new Date().toLocaleDateString()}`);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      alert('Please select a file first.');
+      return;
+    }
+    if (!customName.trim()) {
+      alert('Please enter a name for the resume.');
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
         const fileUrl = event.target?.result as string;
         const newResume = await Storage.setResume({
-          name: `${getResumeTypeLabel(selectedType)} - ${new Date().toLocaleDateString()}`,
+          name: customName.trim(),
           type: selectedType,
           fileUrl,
-          fileName: file.name,
+          fileName: selectedFile.name,
           uploadedAt: new Date().toISOString(),
           lastModified: new Date().toISOString(),
         });
 
         setResumes([...resumes, newResume]);
         setShowUpload(false);
+        setSelectedFile(null);
+        setCustomName("");
       } catch (error) {
         console.error('Failed to save resume:', error);
         alert('Failed to save resume. Please try again.');
       }
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(selectedFile);
+  };
+
+  const handleUpdateName = async (resume: Resume, newName: string) => {
+    if (!newName.trim()) {
+      alert('Name cannot be empty.');
+      setEditingResume(null);
+      return;
+    }
+    try {
+      const updated = await Storage.updateResume(resume.id, { 
+        name: newName.trim(),
+        lastModified: new Date().toISOString()
+      });
+      setResumes(resumes.map((r) => r.id === resume.id ? updated : r));
+      setEditingResume(null);
+    } catch (error) {
+      console.error('Failed to update resume name:', error);
+      alert('Failed to update resume name. Please try again.');
+      setEditingResume(null);
+    }
   };
 
   const handleDownload = (resume: Resume) => {
@@ -69,6 +111,19 @@ export default function ResumesPage() {
         console.error('Failed to delete resume:', error);
         alert('Failed to delete resume. Please try again.');
       }
+    }
+  };
+
+  const isPdf = (fileName: string): boolean => {
+    return fileName.toLowerCase().endsWith('.pdf');
+  };
+
+  const handleView = (resume: Resume) => {
+    if (isPdf(resume.fileName)) {
+      setViewingResume(resume);
+    } else {
+      // Open non-PDF files in a new tab
+      window.open(resume.fileUrl, '_blank');
     }
   };
 
@@ -100,7 +155,7 @@ export default function ResumesPage() {
 
       {showUpload && (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 transition-colors">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100 dark:text-gray-100">Upload New Resume</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Upload New Resume</h2>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -108,8 +163,14 @@ export default function ResumesPage() {
               </label>
               <select
                 value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value as ResumeType)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onChange={(e) => {
+                  setSelectedType(e.target.value as ResumeType);
+                  // Update name if file is selected but name is auto-generated
+                  if (selectedFile && customName === `${getResumeTypeLabel(selectedType)} - ${new Date().toLocaleDateString()}`) {
+                    setCustomName(`${getResumeTypeLabel(e.target.value as ResumeType)} - ${new Date().toLocaleDateString()}`);
+                  }
+                }}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 {resumeTypes.map((type) => (
                   <option key={type} value={type}>
@@ -120,14 +181,53 @@ export default function ResumesPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Select File
+                Resume Name *
+              </label>
+              <input
+                type="text"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                placeholder={`e.g., ${getResumeTypeLabel(selectedType)} - ${new Date().toLocaleDateString()}`}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                This is the display name. The original filename will be preserved separately.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select File *
               </label>
               <input
                 type="file"
                 accept=".pdf,.doc,.docx"
-                onChange={handleFileUpload}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onChange={handleFileSelect}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+              {selectedFile && (
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Selected: <span className="font-medium">{selectedFile.name}</span>
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleUpload}
+                disabled={!selectedFile || !customName.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Upload Resume
+              </button>
+              <button
+                onClick={() => {
+                  setShowUpload(false);
+                  setSelectedFile(null);
+                  setCustomName("");
+                }}
+                className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -149,22 +249,65 @@ export default function ResumesPage() {
           {resumes.map((resume) => (
             <div key={resume.id} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 transition-colors">
               <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 dark:text-gray-100">{resume.name}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">
+                <div className="flex-1 min-w-0">
+                  {editingResume?.id === resume.id ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        defaultValue={resume.name}
+                        onBlur={(e) => {
+                          if (e.target.value !== resume.name) {
+                            handleUpdateName(resume, e.target.value);
+                          } else {
+                            setEditingResume(null);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.currentTarget.blur();
+                          } else if (e.key === 'Escape') {
+                            setEditingResume(null);
+                          }
+                        }}
+                        autoFocus
+                        className="flex-1 px-2 py-1 text-lg font-semibold border border-blue-500 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-slate-700 dark:text-gray-100"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 flex-1">{resume.name}</h3>
+                      <button
+                        onClick={() => setEditingResume(resume)}
+                        className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                        title="Edit name"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     {getResumeTypeLabel(resume.type)}
                   </p>
                 </div>
-                <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400 dark:text-blue-400" />
+                <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400 flex-shrink-0 ml-2" />
               </div>
-              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-4">
-                <p>File: {resume.fileName}</p>
+              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                <p className="truncate" title={resume.fileName}>
+                  <span className="font-medium">Original file:</span> {resume.fileName}
+                </p>
                 <p>Uploaded: {formatDate(resume.uploadedAt)}</p>
               </div>
               <div className="flex gap-2">
                 <button
+                  onClick={() => handleView(resume)}
+                  className="px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                  title="View resume"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <button
                   onClick={() => handleDownload(resume)}
-                  className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors"
+                  className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download
@@ -178,6 +321,40 @@ export default function ResumesPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* View Resume Modal */}
+      {viewingResume && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col transition-colors">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {viewingResume.name}
+              </h2>
+              <button
+                onClick={() => setViewingResume(null)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              {isPdf(viewingResume.fileName) ? (
+                <iframe
+                  src={viewingResume.fileUrl}
+                  className="w-full h-full border-0"
+                  title={viewingResume.name}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Preview not available for this file type. Please download to view.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

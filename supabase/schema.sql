@@ -235,3 +235,26 @@ CREATE POLICY "Allow all operations on todos" ON todos
 CREATE POLICY "Allow all operations on interview_questions" ON interview_questions
   FOR ALL USING (true) WITH CHECK (true);
 
+-- Projects Table
+CREATE TABLE IF NOT EXISTS projects (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  description TEXT,
+  problem_statement TEXT,
+  github_link TEXT NOT NULL,
+  files JSONB DEFAULT '[]'::jsonb,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for better query performance
+CREATE INDEX IF NOT EXISTS idx_projects_created_at ON projects(created_at);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+
+-- Projects policies
+CREATE POLICY "Allow all operations on projects" ON projects
+  FOR ALL USING (true) WITH CHECK (true);
+
