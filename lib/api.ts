@@ -6,8 +6,9 @@ import {
   Link, 
   Contact, 
   RecruiterCall, 
-  LearningItem,
-  Note
+  LearningItem, 
+  Note,
+  Todo
 } from '@/types';
 
 // Helper function to transform database row to app format
@@ -97,6 +98,17 @@ const transformNote = (row: any): Note => ({
   id: row.id,
   title: row.title,
   content: row.content,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+const transformTodo = (row: any): Todo => ({
+  id: row.id,
+  title: row.title,
+  description: row.description,
+  completed: row.completed,
+  priority: row.priority,
+  dueDate: row.due_date,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -569,7 +581,7 @@ export const noteApi = {
   update: async (id: string, updates: Partial<Note>): Promise<Note> => {
     const updateData: any = {};
     if (updates.title) updateData.title = updates.title;
-    if (updates.content !== undefined) updateData.content = updates.content;
+    if (updates.content) updateData.content = updates.content;
     updateData.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
@@ -586,6 +598,67 @@ export const noteApi = {
   delete: async (id: string): Promise<void> => {
     const { error } = await supabase
       .from('notes')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+};
+
+// Todo APIs
+export const todoApi = {
+  getAll: async (): Promise<Todo[]> => {
+    const { data, error } = await supabase
+      .from('todos')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data.map(transformTodo);
+  },
+
+  create: async (todo: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>): Promise<Todo> => {
+    const { data, error } = await supabase
+      .from('todos')
+      .insert({
+        title: todo.title,
+        description: todo.description || null,
+        completed: todo.completed || false,
+        priority: todo.priority || 'medium',
+        due_date: todo.dueDate && todo.dueDate.trim() !== "" ? todo.dueDate : null,
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return transformTodo(data);
+  },
+
+  update: async (id: string, updates: Partial<Todo>): Promise<Todo> => {
+    const updateData: any = {};
+    if (updates.title) updateData.title = updates.title;
+    if (updates.description !== undefined) updateData.description = updates.description || null;
+    if (updates.completed !== undefined) updateData.completed = updates.completed;
+    if (updates.priority) updateData.priority = updates.priority;
+    if (updates.dueDate !== undefined) {
+      updateData.due_date = updates.dueDate && updates.dueDate.trim() !== "" ? updates.dueDate : null;
+    }
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('todos')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return transformTodo(data);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('todos')
       .delete()
       .eq('id', id);
     

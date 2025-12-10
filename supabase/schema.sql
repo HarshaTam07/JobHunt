@@ -127,6 +127,18 @@ CREATE TABLE IF NOT EXISTS notes (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Todos Table
+CREATE TABLE IF NOT EXISTS todos (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  description TEXT,
+  completed BOOLEAN DEFAULT FALSE,
+  priority TEXT NOT NULL CHECK (priority IN ('low', 'medium', 'high')) DEFAULT 'medium',
+  due_date DATE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_job_applications_status ON job_applications(status);
 CREATE INDEX IF NOT EXISTS idx_job_applications_applied_date ON job_applications(applied_date);
@@ -136,6 +148,10 @@ CREATE INDEX IF NOT EXISTS idx_contacts_is_reference ON contacts(is_reference);
 CREATE INDEX IF NOT EXISTS idx_learning_items_status ON learning_items(status);
 CREATE INDEX IF NOT EXISTS idx_learning_items_category ON learning_items(category);
 CREATE INDEX IF NOT EXISTS idx_notes_created_at ON notes(created_at);
+CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(completed);
+CREATE INDEX IF NOT EXISTS idx_todos_priority ON todos(priority);
+CREATE INDEX IF NOT EXISTS idx_todos_due_date ON todos(due_date);
+CREATE INDEX IF NOT EXISTS idx_todos_created_at ON todos(created_at);
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE resumes ENABLE ROW LEVEL SECURITY;
@@ -147,6 +163,7 @@ ALTER TABLE recruiter_calls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE learning_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE interview_prep ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE todos ENABLE ROW LEVEL SECURITY;
 
 -- Create policies to allow all operations for authenticated users
 -- For now, we'll use anon key, so we'll allow public access
@@ -186,5 +203,9 @@ CREATE POLICY "Allow all operations on interview_prep" ON interview_prep
 
 -- Notes policies
 CREATE POLICY "Allow all operations on notes" ON notes
+  FOR ALL USING (true) WITH CHECK (true);
+
+-- Todos policies
+CREATE POLICY "Allow all operations on todos" ON todos
   FOR ALL USING (true) WITH CHECK (true);
 
