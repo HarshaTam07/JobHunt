@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Briefcase, Link as LinkIcon, FolderOpen, BookOpen, Phone, Users, Home, Menu, X, Sun, Moon, StickyNote } from "lucide-react";
+import { FileText, Briefcase, Link as LinkIcon, FolderOpen, BookOpen, Phone, Users, Home, Menu, X, Sun, Moon, StickyNote, CheckSquare } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -21,6 +21,7 @@ export default function Navigation() {
     { href: "/learning", icon: BookOpen, label: "Learning" },
     { href: "/calls", icon: Phone, label: "Calls" },
     { href: "/notes", icon: StickyNote, label: "Notes" },
+    { href: "/todos", icon: CheckSquare, label: "Todos" },
   ];
 
   return (
@@ -29,15 +30,15 @@ export default function Navigation() {
         <div className="flex justify-between h-16">
           <div className="flex flex-1 min-w-0">
             <div className="flex-shrink-0 flex items-center">
-              <Briefcase className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
-              <span className="ml-1 sm:ml-2 text-base sm:text-xl font-bold text-gray-900 dark:text-gray-100 hidden lg:inline">Job Hunt Manager</span>
+              <Briefcase className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 dark:text-blue-400" />
+              <span className="ml-1 sm:ml-2 text-base sm:text-lg lg:text-xl font-bold text-gray-900 dark:text-gray-100 hidden xl:inline">Job Hunt Manager</span>
             </div>
-            <div className="hidden sm:ml-2 md:ml-4 sm:flex sm:space-x-2 md:space-x-3 lg:space-x-4 flex-1 min-w-0">
+            <div className="hidden sm:ml-2 md:ml-3 sm:flex sm:space-x-1 md:space-x-2 lg:space-x-3 flex-1 min-w-0">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
                 return (
-                  <NavLink key={item.href} href={item.href} icon={<Icon className="h-4 w-4" />} isActive={isActive}>
+                  <NavLink key={item.href} href={item.href} icon={<Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />} isActive={isActive}>
                     {item.label}
                   </NavLink>
                 );
@@ -102,7 +103,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`inline-flex items-center px-0.5 sm:px-1 pt-1 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
+      className={`inline-flex items-center px-0.5 sm:px-1 pt-1 text-[10px] sm:text-xs font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
         isActive
           ? "text-blue-600 dark:text-blue-400 border-blue-500 dark:border-blue-400"
           : "text-gray-700 dark:text-gray-300 border-transparent hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500 dark:hover:border-blue-400"

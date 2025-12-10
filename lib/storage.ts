@@ -8,6 +8,7 @@ import {
   recruiterCallApi,
   learningItemApi,
   noteApi,
+  todoApi,
 } from './api';
 import {
   Resume,
@@ -18,6 +19,7 @@ import {
   RecruiterCall,
   LearningItem,
   Note,
+  Todo,
 } from '@/types';
 
 // Storage keys (kept for backward compatibility, but now using Supabase)
@@ -31,6 +33,7 @@ export const STORAGE_KEYS = {
   LEARNING_ITEMS: "learning_items",
   INTERVIEW_PREP: "interview_prep",
   NOTES: "notes",
+  TODOS: "todos",
 } as const;
 
 // Cache for storing data to reduce API calls
@@ -43,6 +46,7 @@ const cache: {
   recruiter_calls?: RecruiterCall[];
   learning_items?: LearningItem[];
   notes?: Note[];
+  todos?: Todo[];
 } = {};
 
 export class Storage {
@@ -393,6 +397,51 @@ export class Storage {
       cache.notes = undefined; // Clear cache
     } catch (error) {
       console.error('Error deleting note:', error);
+      throw error;
+    }
+  }
+
+  // Todo operations
+  static async getTodos(): Promise<Todo[]> {
+    try {
+      if (!cache.todos) {
+        cache.todos = await todoApi.getAll();
+      }
+      return cache.todos;
+    } catch (error) {
+      console.error('Error fetching todos:', error);
+      return [];
+    }
+  }
+
+  static async setTodo(todo: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>): Promise<Todo> {
+    try {
+      const newTodo = await todoApi.create(todo);
+      cache.todos = undefined; // Clear cache
+      return newTodo;
+    } catch (error) {
+      console.error('Error creating todo:', error);
+      throw error;
+    }
+  }
+
+  static async updateTodo(id: string, updates: Partial<Todo>): Promise<Todo> {
+    try {
+      const updated = await todoApi.update(id, updates);
+      cache.todos = undefined; // Clear cache
+      return updated;
+    } catch (error) {
+      console.error('Error updating todo:', error);
+      throw error;
+    }
+  }
+
+  static async deleteTodo(id: string): Promise<void> {
+    try {
+      await todoApi.delete(id);
+      cache.todos = undefined; // Clear cache
+    } catch (error) {
+      console.error('Error deleting todo:', error);
       throw error;
     }
   }
