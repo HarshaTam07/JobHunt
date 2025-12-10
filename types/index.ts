@@ -163,3 +163,41 @@ export interface Todo {
   updatedAt: string;
 }
 
+export interface InterviewQuestion {
+  id: string;
+  question: string;
+  answer?: string;
+  category: "behavioral" | "technical";
+  technology: InterviewTechnology;
+  difficulty: "easy" | "medium" | "hard";
+  tags?: string;
+  lastPracticedDate?: string;
+  timesPracticed: number;
+  rating?: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type InterviewTechnology =
+  | "java"
+  | "react"
+  | "angular"
+  | "aws"
+  | "spring-boot"
+  | "python"
+  | "javascript"
+  | "typescript"
+  | "nodejs"
+  | "sql"
+  | "system-design"
+  | "data-structures"
+  | "algorithms"
+  | "leetcode"
+  | "behavioral"
+  | "html-css"
+  | "docker"
+  | "kubernetes"
+  | "microservices"
+  | "other";
+

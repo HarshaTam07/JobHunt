@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Briefcase, Link as LinkIcon, FolderOpen, BookOpen, Phone, Users, Home, Menu, X, Sun, Moon, StickyNote, CheckSquare } from "lucide-react";
+import { FileText, Briefcase, Link as LinkIcon, FolderOpen, BookOpen, Phone, Users, Home, Menu, X, Sun, Moon, StickyNote, CheckSquare, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -22,6 +22,7 @@ export default function Navigation() {
     { href: "/calls", icon: Phone, label: "Calls" },
     { href: "/notes", icon: StickyNote, label: "Notes" },
     { href: "/todos", icon: CheckSquare, label: "Todos" },
+    { href: "/interview-questions", icon: HelpCircle, label: "Interview Q&A" },
   ];
 
   return (

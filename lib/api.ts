@@ -8,7 +8,8 @@ import {
   RecruiterCall, 
   LearningItem, 
   Note,
-  Todo
+  Todo,
+  InterviewQuestion
 } from '@/types';
 
 // Helper function to transform database row to app format
@@ -109,6 +110,22 @@ const transformTodo = (row: any): Todo => ({
   completed: row.completed,
   priority: row.priority,
   dueDate: row.due_date,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+const transformInterviewQuestion = (row: any): InterviewQuestion => ({
+  id: row.id,
+  question: row.question,
+  answer: row.answer,
+  category: row.category || 'technical',
+  technology: row.technology,
+  difficulty: row.difficulty,
+  tags: row.tags,
+  lastPracticedDate: row.last_practiced_date,
+  timesPracticed: row.times_practiced || 0,
+  rating: row.rating,
+  notes: row.notes,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -659,6 +676,77 @@ export const todoApi = {
   delete: async (id: string): Promise<void> => {
     const { error } = await supabase
       .from('todos')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+};
+
+// Interview Question APIs
+export const interviewQuestionApi = {
+  getAll: async (): Promise<InterviewQuestion[]> => {
+    const { data, error } = await supabase
+      .from('interview_questions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data.map(transformInterviewQuestion);
+  },
+
+  create: async (question: Omit<InterviewQuestion, 'id' | 'createdAt' | 'updatedAt'>): Promise<InterviewQuestion> => {
+    const { data, error } = await supabase
+      .from('interview_questions')
+      .insert({
+        question: question.question,
+        answer: question.answer || null,
+        category: question.category || 'technical',
+        technology: question.technology,
+        difficulty: question.difficulty || 'medium',
+        tags: question.tags || null,
+        last_practiced_date: question.lastPracticedDate && question.lastPracticedDate.trim() !== "" ? question.lastPracticedDate : null,
+        times_practiced: question.timesPracticed || 0,
+        rating: question.rating || null,
+        notes: question.notes || null,
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return transformInterviewQuestion(data);
+  },
+
+  update: async (id: string, updates: Partial<InterviewQuestion>): Promise<InterviewQuestion> => {
+    const updateData: any = {};
+    if (updates.question) updateData.question = updates.question;
+    if (updates.answer !== undefined) updateData.answer = updates.answer || null;
+    if (updates.category) updateData.category = updates.category;
+    if (updates.technology) updateData.technology = updates.technology;
+    if (updates.difficulty) updateData.difficulty = updates.difficulty;
+    if (updates.tags !== undefined) updateData.tags = updates.tags || null;
+    if (updates.lastPracticedDate !== undefined) {
+      updateData.last_practiced_date = updates.lastPracticedDate && updates.lastPracticedDate.trim() !== "" ? updates.lastPracticedDate : null;
+    }
+    if (updates.timesPracticed !== undefined) updateData.times_practiced = updates.timesPracticed;
+    if (updates.rating !== undefined) updateData.rating = updates.rating || null;
+    if (updates.notes !== undefined) updateData.notes = updates.notes || null;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('interview_questions')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return transformInterviewQuestion(data);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('interview_questions')
       .delete()
       .eq('id', id);
     

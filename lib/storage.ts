@@ -9,6 +9,7 @@ import {
   learningItemApi,
   noteApi,
   todoApi,
+  interviewQuestionApi,
 } from './api';
 import {
   Resume,
@@ -20,6 +21,7 @@ import {
   LearningItem,
   Note,
   Todo,
+  InterviewQuestion,
 } from '@/types';
 
 // Storage keys (kept for backward compatibility, but now using Supabase)
@@ -34,6 +36,7 @@ export const STORAGE_KEYS = {
   INTERVIEW_PREP: "interview_prep",
   NOTES: "notes",
   TODOS: "todos",
+  INTERVIEW_QUESTIONS: "interview_questions",
 } as const;
 
 // Cache for storing data to reduce API calls
@@ -47,6 +50,7 @@ const cache: {
   learning_items?: LearningItem[];
   notes?: Note[];
   todos?: Todo[];
+  interview_questions?: InterviewQuestion[];
 } = {};
 
 export class Storage {
@@ -442,6 +446,51 @@ export class Storage {
       cache.todos = undefined; // Clear cache
     } catch (error) {
       console.error('Error deleting todo:', error);
+      throw error;
+    }
+  }
+
+  // Interview Question operations
+  static async getInterviewQuestions(): Promise<InterviewQuestion[]> {
+    try {
+      if (!cache.interview_questions) {
+        cache.interview_questions = await interviewQuestionApi.getAll();
+      }
+      return cache.interview_questions;
+    } catch (error) {
+      console.error('Error fetching interview questions:', error);
+      return [];
+    }
+  }
+
+  static async setInterviewQuestion(question: Omit<InterviewQuestion, 'id' | 'createdAt' | 'updatedAt'>): Promise<InterviewQuestion> {
+    try {
+      const newQuestion = await interviewQuestionApi.create(question);
+      cache.interview_questions = undefined; // Clear cache
+      return newQuestion;
+    } catch (error) {
+      console.error('Error creating interview question:', error);
+      throw error;
+    }
+  }
+
+  static async updateInterviewQuestion(id: string, updates: Partial<InterviewQuestion>): Promise<InterviewQuestion> {
+    try {
+      const updated = await interviewQuestionApi.update(id, updates);
+      cache.interview_questions = undefined; // Clear cache
+      return updated;
+    } catch (error) {
+      console.error('Error updating interview question:', error);
+      throw error;
+    }
+  }
+
+  static async deleteInterviewQuestion(id: string): Promise<void> {
+    try {
+      await interviewQuestionApi.delete(id);
+      cache.interview_questions = undefined; // Clear cache
+    } catch (error) {
+      console.error('Error deleting interview question:', error);
       throw error;
     }
   }
