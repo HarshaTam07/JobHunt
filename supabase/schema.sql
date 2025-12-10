@@ -139,6 +139,23 @@ CREATE TABLE IF NOT EXISTS todos (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Interview Questions Table
+CREATE TABLE IF NOT EXISTS interview_questions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  question TEXT NOT NULL,
+  answer TEXT,
+  category TEXT NOT NULL CHECK (category IN ('behavioral', 'technical')) DEFAULT 'technical',
+  technology TEXT NOT NULL CHECK (technology IN ('java', 'react', 'angular', 'aws', 'spring-boot', 'python', 'javascript', 'typescript', 'nodejs', 'sql', 'system-design', 'data-structures', 'algorithms', 'leetcode', 'behavioral', 'html-css', 'docker', 'kubernetes', 'microservices', 'other')),
+  difficulty TEXT NOT NULL CHECK (difficulty IN ('easy', 'medium', 'hard')) DEFAULT 'medium',
+  tags TEXT,
+  last_practiced_date DATE,
+  times_practiced INTEGER DEFAULT 0,
+  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_job_applications_status ON job_applications(status);
 CREATE INDEX IF NOT EXISTS idx_job_applications_applied_date ON job_applications(applied_date);
@@ -152,6 +169,10 @@ CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(completed);
 CREATE INDEX IF NOT EXISTS idx_todos_priority ON todos(priority);
 CREATE INDEX IF NOT EXISTS idx_todos_due_date ON todos(due_date);
 CREATE INDEX IF NOT EXISTS idx_todos_created_at ON todos(created_at);
+CREATE INDEX IF NOT EXISTS idx_interview_questions_category ON interview_questions(category);
+CREATE INDEX IF NOT EXISTS idx_interview_questions_technology ON interview_questions(technology);
+CREATE INDEX IF NOT EXISTS idx_interview_questions_difficulty ON interview_questions(difficulty);
+CREATE INDEX IF NOT EXISTS idx_interview_questions_created_at ON interview_questions(created_at);
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE resumes ENABLE ROW LEVEL SECURITY;
@@ -164,6 +185,7 @@ ALTER TABLE learning_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE interview_prep ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE todos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE interview_questions ENABLE ROW LEVEL SECURITY;
 
 -- Create policies to allow all operations for authenticated users
 -- For now, we'll use anon key, so we'll allow public access
@@ -207,5 +229,9 @@ CREATE POLICY "Allow all operations on notes" ON notes
 
 -- Todos policies
 CREATE POLICY "Allow all operations on todos" ON todos
+  FOR ALL USING (true) WITH CHECK (true);
+
+-- Interview Questions policies
+CREATE POLICY "Allow all operations on interview_questions" ON interview_questions
   FOR ALL USING (true) WITH CHECK (true);
 
