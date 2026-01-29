@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, FileText, Eye, X, Search } from "lucide-react";
+import { Plus, Edit, Trash2, FileText, Eye, X, Search, Download } from "lucide-react";
 import { Storage } from "@/lib/storage";
 import { Note } from "@/types";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
 
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -89,6 +91,114 @@ export default function NotesPage() {
     );
   });
 
+  // Download as Excel
+  const handleDownloadExcel = () => {
+    if (filteredNotes.length === 0) {
+      alert("No notes to download");
+      return;
+    }
+
+    const data = filteredNotes.map((note, index) => ({
+      "S.No": index + 1,
+      "Title": note.title,
+      "Content": note.content,
+      "Created Date": new Date(note.createdAt).toLocaleDateString(),
+      "Updated Date": new Date(note.updatedAt).toLocaleDateString(),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Notes");
+
+    // Auto-size columns
+    const maxWidth = 50;
+    const colWidths = [
+      { wch: 8 },  // S.No
+      { wch: 30 }, // Title
+      { wch: 50 }, // Content
+      { wch: 15 }, // Created Date
+      { wch: 15 }, // Updated Date
+    ];
+    worksheet["!cols"] = colWidths;
+
+    XLSX.writeFile(workbook, `notes_${new Date().toISOString().split("T")[0]}.xlsx`);
+  };
+
+  // Download as PDF
+  const handleDownloadPDF = () => {
+    if (filteredNotes.length === 0) {
+      alert("No notes to download");
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    let yPosition = margin;
+    const lineHeight = 7;
+    const maxWidth = pageWidth - 2 * margin;
+
+    // Add title
+    doc.setFontSize(18);
+    doc.text("Notes Export", margin, yPosition);
+    yPosition += lineHeight * 2;
+
+    // Add export date
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Exported on: ${new Date().toLocaleString()}`, margin, yPosition);
+    yPosition += lineHeight * 1.5;
+
+    filteredNotes.forEach((note, index) => {
+      // Check if we need a new page
+      if (yPosition > pageHeight - 40) {
+        doc.addPage();
+        yPosition = margin;
+      }
+
+      // Note number and title
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, "bold");
+      const titleText = `${index + 1}. ${note.title}`;
+      const titleLines = doc.splitTextToSize(titleText, maxWidth);
+      doc.text(titleLines, margin, yPosition);
+      yPosition += lineHeight * titleLines.length + 2;
+
+      // Content
+      doc.setFontSize(11);
+      doc.setFont(undefined, "normal");
+      const contentLines = doc.splitTextToSize(note.content, maxWidth);
+      
+      contentLines.forEach((line: string) => {
+        if (yPosition > pageHeight - 20) {
+          doc.addPage();
+          yPosition = margin;
+        }
+        doc.text(line, margin, yPosition);
+        yPosition += lineHeight;
+      });
+
+      // Dates
+      yPosition += 2;
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      const datesText = `Created: ${new Date(note.createdAt).toLocaleDateString()} | Updated: ${new Date(note.updatedAt).toLocaleDateString()}`;
+      doc.text(datesText, margin, yPosition);
+      yPosition += lineHeight * 2;
+
+      // Separator line
+      if (index < filteredNotes.length - 1) {
+        doc.setDrawColor(200, 200, 200);
+        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += lineHeight;
+      }
+    });
+
+    doc.save(`notes_${new Date().toISOString().split("T")[0]}.pdf`);
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -96,17 +206,39 @@ export default function NotesPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Notes</h1>
           <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">Manage your text notes</p>
         </div>
-        <button
-          onClick={() => {
-            setShowForm(true);
-            setEditingId(null);
-            setFormData({ title: "", content: "" });
-          }}
-          className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600 text-sm sm:text-base"
-        >
-          <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-          Add Note
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          {filteredNotes.length > 0 && (
+            <div className="flex gap-2">
+              <button
+                onClick={handleDownloadExcel}
+                className="flex items-center justify-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors dark:bg-green-500 dark:hover:bg-green-600 text-sm sm:text-base"
+                title="Download as Excel"
+              >
+                <Download className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Excel</span>
+              </button>
+              <button
+                onClick={handleDownloadPDF}
+                className="flex items-center justify-center px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors dark:bg-red-500 dark:hover:bg-red-600 text-sm sm:text-base"
+                title="Download as PDF"
+              >
+                <Download className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">PDF</span>
+              </button>
+            </div>
+          )}
+          <button
+            onClick={() => {
+              setShowForm(true);
+              setEditingId(null);
+              setFormData({ title: "", content: "" });
+            }}
+            className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600 text-sm sm:text-base"
+          >
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+            Add Note
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}
