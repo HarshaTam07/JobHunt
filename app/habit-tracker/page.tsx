@@ -201,14 +201,14 @@ export default function HabitTrackerPage() {
               </button>
             </div>
 
-            {/* Days Header - Desktop */}
-            <div className="hidden sm:grid grid-cols-7 gap-2">
+            {/* Days Header - Fixed Grid (Mobile & Desktop) */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                 const isToday = isCurrentMonth && day === currentDay;
                 return (
                   <div
                     key={day}
-                    className={`text-center py-2 px-1 text-xs sm:text-sm font-medium rounded ${
+                    className={`text-center py-1.5 sm:py-2 px-0.5 sm:px-1 text-[10px] sm:text-xs md:text-sm font-medium rounded ${
                       isToday
                         ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
                         : "text-gray-600 dark:text-gray-400"
@@ -218,27 +218,6 @@ export default function HabitTrackerPage() {
                   </div>
                 );
               })}
-            </div>
-
-            {/* Days Header - Mobile (Scrollable) */}
-            <div className="sm:hidden overflow-x-auto pb-2 -mx-1 px-1">
-              <div className="flex gap-1.5 min-w-max">
-                {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                  const isToday = isCurrentMonth && day === currentDay;
-                  return (
-                    <div
-                      key={day}
-                      className={`text-center py-2 px-2.5 min-w-[3.5rem] text-xs font-medium rounded flex-shrink-0 ${
-                        isToday
-                          ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                          : "text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-slate-700"
-                      }`}
-                    >
-                      {day}{getDaySuffix(day)}
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </div>
         </div>
@@ -278,15 +257,15 @@ export default function HabitTrackerPage() {
                     </button>
                   </div>
 
-                  {/* Checkboxes - Desktop */}
-                  <div className="hidden sm:grid grid-cols-7 gap-2">
+                  {/* Checkboxes - Fixed Grid (Mobile & Desktop) */}
+                  <div className="grid grid-cols-7 gap-1 sm:gap-2">
                     {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                       const isChecked = checkedDaysForMonth.has(day);
                       const isToday = isCurrentMonth && day === currentDay;
                     return (
                       <label
                         key={day}
-                        className={`flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer transition-all ${
+                        className={`flex items-center justify-center p-1 sm:p-2 border-2 rounded-lg cursor-pointer transition-all touch-manipulation active:scale-95 ${
                           isToday
                             ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
                             : "border-gray-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500"
@@ -303,14 +282,14 @@ export default function HabitTrackerPage() {
                           className="sr-only"
                         />
                         <div
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                          className={`w-4 h-4 sm:w-5 sm:h-5 rounded border-2 flex items-center justify-center ${
                             isChecked
                               ? "bg-green-500 dark:bg-green-600 border-green-600 dark:border-green-500"
                               : "border-gray-400 dark:border-slate-500"
                           }`}
                         >
                           {isChecked && (
-                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           )}
@@ -319,50 +298,6 @@ export default function HabitTrackerPage() {
                     );
                   })}
                 </div>
-
-                  {/* Checkboxes - Mobile (Scrollable) */}
-                  <div className="sm:hidden overflow-x-auto pb-2 -mx-1 px-1">
-                    <div className="flex gap-2 min-w-max">
-                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                        const isChecked = checkedDaysForMonth.has(day);
-                        const isToday = isCurrentMonth && day === currentDay;
-                      return (
-                        <label
-                          key={day}
-                          className={`flex items-center justify-center p-3 min-w-[3.5rem] border-2 rounded-lg cursor-pointer transition-all flex-shrink-0 touch-manipulation active:scale-95 ${
-                            isToday
-                              ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
-                              : "border-gray-300 dark:border-slate-600"
-                          } ${
-                            isChecked
-                              ? "bg-green-100 dark:bg-green-900/30 border-green-500 dark:border-green-400"
-                              : "bg-white dark:bg-slate-700"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => handleToggleDay(habit.id, day)}
-                            className="sr-only"
-                          />
-                          <div
-                            className={`w-6 h-6 sm:w-5 sm:h-5 rounded border-2 flex items-center justify-center ${
-                              isChecked
-                                ? "bg-green-500 dark:bg-green-600 border-green-600 dark:border-green-500"
-                                : "border-gray-400 dark:border-slate-500"
-                            }`}
-                          >
-                            {isChecked && (
-                              <svg className="w-4 h-4 sm:w-3 sm:h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                          </div>
-                        </label>
-                      );
-                      })}
-                    </div>
-                  </div>
                 </div>
               );
             })}
