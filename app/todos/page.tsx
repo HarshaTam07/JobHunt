@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, CheckCircle2, Circle, Calendar, AlertCircle, CheckSquare } from "lucide-react";
+import { Plus, Edit, Trash2, CheckCircle2, Circle, Calendar, AlertCircle, CheckSquare, Search } from "lucide-react";
 import { Storage } from "@/lib/storage";
 import { Todo } from "@/types";
 
@@ -10,6 +10,7 @@ export default function TodosPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "completed">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState<Partial<Todo>>({
     title: "",
     description: "",
@@ -111,11 +112,22 @@ export default function TodosPage() {
     }
   };
 
-  const filteredTodos = filterStatus === "all"
+  // Filter todos by status
+  const statusFilteredTodos = filterStatus === "all"
     ? todos
     : filterStatus === "completed"
     ? todos.filter((todo) => todo.completed)
     : todos.filter((todo) => !todo.completed);
+
+  // Filter todos based on search query
+  const filteredTodos = statusFilteredTodos.filter((todo) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      todo.title.toLowerCase().includes(query) ||
+      (todo.description && todo.description.toLowerCase().includes(query))
+    );
+  });
 
   const sortedTodos = [...filteredTodos].sort((a, b) => {
     // Sort by: completed status, priority, due date
@@ -155,8 +167,23 @@ export default function TodosPage() {
         </button>
       </div>
 
-      {/* Stats and Filter */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 transition-colors">
+      {/* Search Bar */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-3 sm:p-4 transition-colors">
+        <div className="relative mb-3 sm:mb-4">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search todos by title or description..."
+            className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-2 text-base sm:text-base border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
+          />
+        </div>
+        {searchQuery && (
+          <p className="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+            Found {filteredTodos.length} todo{filteredTodos.length !== 1 ? 's' : ''}
+          </p>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4 text-sm">
             <span className="text-gray-600 dark:text-gray-400">
@@ -301,11 +328,18 @@ export default function TodosPage() {
       )}
 
       {/* Todos List */}
-      {sortedTodos.length === 0 ? (
+      {sortedTodos.length === 0 && todos.length > 0 ? (
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-8 sm:p-12 text-center transition-colors">
+          <Search className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+            {searchQuery ? `No todos found matching "${searchQuery}"` : filterStatus === "completed" ? "No completed todos yet" : filterStatus === "active" ? "No active todos. Great job!" : "No todos added yet"}
+          </p>
+        </div>
+      ) : sortedTodos.length === 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-8 sm:p-12 text-center transition-colors">
           <CheckSquare className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-            {filterStatus === "completed" ? "No completed todos yet" : filterStatus === "active" ? "No active todos. Great job!" : "No todos added yet"}
+            No todos added yet
           </p>
         </div>
       ) : (

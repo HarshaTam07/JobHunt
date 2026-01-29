@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, Briefcase, FolderOpen, Link as LinkIcon, Users, BookOpen, Phone, StickyNote, Plus, X, CheckSquare } from "lucide-react";
+import { FileText, Briefcase, FolderOpen, Link as LinkIcon, Users, BookOpen, Phone, StickyNote, Plus, X, CheckSquare, Target } from "lucide-react";
 import { Storage, STORAGE_KEYS } from "@/lib/storage";
-import { JobApplication, Resume, Document, Contact, RecruiterCall, Note, Todo } from "@/types";
+import { JobApplication, Resume, Document, Contact, RecruiterCall, Note, Todo, Habit } from "@/types";
 import { formatDate } from "@/lib/utils";
 
 export default function Dashboard() {
@@ -17,12 +17,13 @@ export default function Dashboard() {
     calls: 0,
     notes: 0,
     todos: 0,
+    habits: 0,
   });
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [resumes, applications, documents, links, contacts, calls, notes, todos] = await Promise.all([
+        const [resumes, applications, documents, links, contacts, calls, notes, todos, habits] = await Promise.all([
           Storage.getResumes(),
           Storage.getJobApplications(),
           Storage.getDocuments(),
@@ -31,6 +32,7 @@ export default function Dashboard() {
           Storage.getRecruiterCalls(),
           Storage.getNotes(),
           Storage.getTodos(),
+          Storage.getHabits(),
         ]);
 
         setStats({
@@ -42,6 +44,7 @@ export default function Dashboard() {
           calls: calls.length,
           notes: notes.length,
           todos: todos.length,
+          habits: habits.length,
         });
       } catch (error) {
         console.error('Failed to load stats:', error);
@@ -109,16 +112,24 @@ export default function Dashboard() {
           href="/todos"
           color="teal"
         />
+        <StatBox
+          icon={<Target className="h-8 w-8 text-pink-600 dark:text-pink-400" />}
+          title="Habits"
+          value={stats.habits}
+          href="/habit-tracker"
+          color="pink"
+        />
       </div>
 
       {/* Quick Actions */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 transition-colors">
         <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <QuickActionLink href="/resumes" icon={<FileText />} label="Upload Resume" />
           <QuickActionLink href="/applications" icon={<Briefcase />} label="Add Application" />
           <QuickActionLink href="/calls" icon={<Phone />} label="Add Call" />
           <QuickActionLink href="/learning" icon={<BookOpen />} label="Add Learning Item" />
+          <QuickActionLink href="/habit-tracker" icon={<Target />} label="Habits" />
           <QuickAddNote />
         </div>
       </div>
