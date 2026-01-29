@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Download, Trash2, Upload, FileText, Eye, X, Edit } from "lucide-react";
+import { Plus, Download, Trash2, Upload, FileText, Eye, X, Edit, Search } from "lucide-react";
 import { Storage, STORAGE_KEYS } from "@/lib/storage";
 import { Resume, ResumeType } from "@/types";
 import { formatDate, getResumeTypeLabel } from "@/lib/utils";
@@ -15,6 +15,7 @@ export default function ResumesPage() {
   const [editingResume, setEditingResume] = useState<Resume | null>(null);
   const [customName, setCustomName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadResumes();
@@ -137,20 +138,50 @@ export default function ResumesPage() {
     "ai-ml",
   ];
 
+  // Filter resumes based on search query
+  const filteredResumes = resumes.filter((resume) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      resume.name.toLowerCase().includes(query) ||
+      getResumeTypeLabel(resume.type).toLowerCase().includes(query) ||
+      resume.fileName.toLowerCase().includes(query)
+    );
+  });
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">Resume Management</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400 dark:text-gray-400">Manage all your resume versions</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Resume Management</h1>
+          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">Manage all your resume versions</p>
         </div>
         <button
           onClick={() => setShowUpload(!showUpload)}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
         >
-          <Plus className="h-5 w-5 mr-2" />
+          <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
           Upload Resume
         </button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-3 sm:p-4 transition-colors">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search resumes by name, type, or filename..."
+            className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-2 text-base sm:text-base border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
+          />
+        </div>
+        {searchQuery && (
+          <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+            Found {filteredResumes.length} resume{filteredResumes.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
       {showUpload && (
@@ -233,10 +264,17 @@ export default function ResumesPage() {
         </div>
       )}
 
-      {resumes.length === 0 ? (
+      {filteredResumes.length === 0 && resumes.length > 0 ? (
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12 text-center transition-colors">
+          <Search className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            No resumes found matching "{searchQuery}"
+          </p>
+        </div>
+      ) : filteredResumes.length === 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12 text-center transition-colors">
           <FileText className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-4">No resumes uploaded yet</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">No resumes uploaded yet</p>
           <button
             onClick={() => setShowUpload(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -246,7 +284,7 @@ export default function ResumesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {resumes.map((resume) => (
+          {filteredResumes.map((resume) => (
             <div key={resume.id} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 transition-colors">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1 min-w-0">

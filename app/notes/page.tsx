@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, FileText, Eye, X } from "lucide-react";
+import { Plus, Edit, Trash2, FileText, Eye, X, Search } from "lucide-react";
 import { Storage } from "@/lib/storage";
 import { Note } from "@/types";
 
@@ -10,6 +10,7 @@ export default function NotesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewingNote, setViewingNote] = useState<Note | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState<Partial<Note>>({
     title: "",
     content: "",
@@ -78,6 +79,16 @@ export default function NotesPage() {
     return text.substring(0, maxLength) + "...";
   };
 
+  // Filter notes based on search query
+  const filteredNotes = notes.filter((note) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      note.title.toLowerCase().includes(query) ||
+      note.content.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -96,6 +107,25 @@ export default function NotesPage() {
           <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
           Add Note
         </button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-3 sm:p-4 transition-colors">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search notes by title or content..."
+            className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-2 text-base sm:text-base border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
+          />
+        </div>
+        {searchQuery && (
+          <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+            Found {filteredNotes.length} note{filteredNotes.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
       {/* Form */}
@@ -155,7 +185,14 @@ export default function NotesPage() {
       )}
 
       {/* Notes Table - Mobile Card View / Desktop Table View */}
-      {notes.length === 0 ? (
+      {filteredNotes.length === 0 && notes.length > 0 ? (
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-8 sm:p-12 text-center transition-colors">
+          <Search className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+            No notes found matching "{searchQuery}"
+          </p>
+        </div>
+      ) : filteredNotes.length === 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-8 sm:p-12 text-center transition-colors">
           <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">No notes added yet</p>
@@ -164,7 +201,7 @@ export default function NotesPage() {
         <>
           {/* Mobile Card View */}
           <div className="block sm:hidden space-y-3">
-            {notes.map((note) => (
+            {filteredNotes.map((note) => (
               <div
                 key={note.id}
                 className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 border border-gray-200 dark:border-slate-700"
@@ -235,7 +272,7 @@ export default function NotesPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
-                  {notes.map((note) => (
+                  {filteredNotes.map((note) => (
                     <tr key={note.id} className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900 dark:text-gray-100">

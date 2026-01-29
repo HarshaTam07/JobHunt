@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Download, Trash2, FolderOpen, Eye, X, Edit } from "lucide-react";
+import { Plus, Download, Trash2, FolderOpen, Eye, X, Edit, Search } from "lucide-react";
 import { Storage, STORAGE_KEYS } from "@/lib/storage";
 import { Document, DocumentType } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -15,6 +15,7 @@ export default function DocumentsPage() {
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [customName, setCustomName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadDocuments();
@@ -145,26 +146,56 @@ export default function DocumentsPage() {
     return labels[type];
   };
 
-  const groupedDocs = documents.reduce((acc, doc) => {
+  // Filter documents based on search query
+  const filteredDocuments = documents.filter((doc) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      doc.name.toLowerCase().includes(query) ||
+      getTypeLabel(doc.type).toLowerCase().includes(query) ||
+      doc.fileName.toLowerCase().includes(query)
+    );
+  });
+
+  const groupedDocs = filteredDocuments.reduce((acc, doc) => {
     if (!acc[doc.type]) acc[doc.type] = [];
     acc[doc.type].push(doc);
     return acc;
   }, {} as Record<DocumentType, Document[]>);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Documents</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Store and manage all your important documents</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Documents</h1>
+          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">Store and manage all your important documents</p>
         </div>
         <button
           onClick={() => setShowUpload(!showUpload)}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
         >
-          <Plus className="h-5 w-5 mr-2" />
+          <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
           Upload Document
         </button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-3 sm:p-4 transition-colors">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search documents by name, type, or filename..."
+            className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-2 text-base sm:text-base border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
+          />
+        </div>
+        {searchQuery && (
+          <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+            Found {filteredDocuments.length} document{filteredDocuments.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
       {showUpload && (
@@ -247,7 +278,14 @@ export default function DocumentsPage() {
         </div>
       )}
 
-      {documents.length === 0 ? (
+      {filteredDocuments.length === 0 && documents.length > 0 ? (
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12 text-center transition-colors">
+          <Search className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            No documents found matching "{searchQuery}"
+          </p>
+        </div>
+      ) : filteredDocuments.length === 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12 text-center transition-colors">
           <FolderOpen className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-400 mb-4">No documents uploaded yet</p>

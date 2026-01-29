@@ -220,3 +220,11 @@ export interface Project {
   updatedAt: string;
 }
 
+export interface Habit {
+  id: string;
+  name: string;
+  checkedDays: Record<string, boolean>; // Key: "YYYY-MM-DD", Value: boolean
+  createdAt: string;
+  updatedAt: string;
+}
+

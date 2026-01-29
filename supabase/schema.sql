@@ -258,3 +258,22 @@ ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all operations on projects" ON projects
   FOR ALL USING (true) WITH CHECK (true);
 
+-- Habits Table
+CREATE TABLE IF NOT EXISTS habits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  checked_days JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for better query performance
+CREATE INDEX IF NOT EXISTS idx_habits_created_at ON habits(created_at);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE habits ENABLE ROW LEVEL SECURITY;
+
+-- Habits policies
+CREATE POLICY "Allow all operations on habits" ON habits
+  FOR ALL USING (true) WITH CHECK (true);
+

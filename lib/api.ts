@@ -10,7 +10,8 @@ import {
   Note,
   Todo,
   InterviewQuestion,
-  Project
+  Project,
+  Habit
 } from '@/types';
 
 // Helper function to transform database row to app format
@@ -840,6 +841,67 @@ export const projectApi = {
   delete: async (id: string): Promise<void> => {
     const { error } = await supabase
       .from('projects')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+};
+
+// Habit APIs
+const transformHabit = (row: any): Habit => ({
+  id: row.id,
+  name: row.name,
+  checkedDays: row.checked_days || {},
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+export const habitApi = {
+  getAll: async (): Promise<Habit[]> => {
+    const { data, error } = await supabase
+      .from('habits')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data.map(transformHabit);
+  },
+
+  create: async (habit: Omit<Habit, 'id' | 'createdAt' | 'updatedAt'>): Promise<Habit> => {
+    const { data, error } = await supabase
+      .from('habits')
+      .insert({
+        name: habit.name,
+        checked_days: habit.checkedDays || {},
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return transformHabit(data);
+  },
+
+  update: async (id: string, updates: Partial<Habit>): Promise<Habit> => {
+    const updateData: any = {};
+    if (updates.name) updateData.name = updates.name;
+    if (updates.checkedDays !== undefined) updateData.checked_days = updates.checkedDays;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('habits')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return transformHabit(data);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('habits')
       .delete()
       .eq('id', id);
 

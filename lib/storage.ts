@@ -11,6 +11,7 @@ import {
   todoApi,
   interviewQuestionApi,
   projectApi,
+  habitApi,
 } from './api';
 import {
   Resume,
@@ -24,6 +25,7 @@ import {
   Todo,
   InterviewQuestion,
   Project,
+  Habit,
 } from '@/types';
 
 // Storage keys (kept for backward compatibility, but now using Supabase)
@@ -40,6 +42,7 @@ export const STORAGE_KEYS = {
   TODOS: "todos",
   INTERVIEW_QUESTIONS: "interview_questions",
   PROJECTS: "projects",
+  HABITS: "habits",
 } as const;
 
 // Cache for storing data to reduce API calls
@@ -55,6 +58,7 @@ const cache: {
   todos?: Todo[];
   interview_questions?: InterviewQuestion[];
   projects?: Project[];
+  habits?: Habit[];
 } = {};
 
 export class Storage {
@@ -574,6 +578,51 @@ export class Storage {
       cache.projects = undefined; // Clear cache
     } catch (error) {
       console.error('Error deleting project:', error);
+      throw error;
+    }
+  }
+
+  // Habit operations
+  static async getHabits(): Promise<Habit[]> {
+    try {
+      if (!cache.habits) {
+        cache.habits = await habitApi.getAll();
+      }
+      return cache.habits || [];
+    } catch (error) {
+      console.error('Error fetching habits:', error);
+      return [];
+    }
+  }
+
+  static async setHabit(habit: Omit<Habit, 'id' | 'createdAt' | 'updatedAt'>): Promise<Habit> {
+    try {
+      const newHabit = await habitApi.create(habit);
+      cache.habits = undefined; // Clear cache
+      return newHabit;
+    } catch (error) {
+      console.error('Error creating habit:', error);
+      throw error;
+    }
+  }
+
+  static async updateHabit(id: string, updates: Partial<Habit>): Promise<Habit> {
+    try {
+      const updated = await habitApi.update(id, updates);
+      cache.habits = undefined; // Clear cache
+      return updated;
+    } catch (error) {
+      console.error('Error updating habit:', error);
+      throw error;
+    }
+  }
+
+  static async deleteHabit(id: string): Promise<void> {
+    try {
+      await habitApi.delete(id);
+      cache.habits = undefined; // Clear cache
+    } catch (error) {
+      console.error('Error deleting habit:', error);
       throw error;
     }
   }
