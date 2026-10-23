@@ -334,6 +334,16 @@ export class Storage {
     }
   }
 
+  static async deleteRecruiterCalls(ids: string[]): Promise<void> {
+    try {
+      await recruiterCallApi.deleteMany(ids);
+      cache.recruiter_calls = undefined; // Clear cache
+    } catch (error) {
+      console.error('Error deleting recruiter calls:', error);
+      throw error;
+    }
+  }
+
   // Learning Item operations
   static async getLearningItems(): Promise<LearningItem[]> {
     try {
@@ -424,6 +434,16 @@ export class Storage {
     }
   }
 
+  static async deleteNotes(ids: string[]): Promise<void> {
+    try {
+      await noteApi.deleteMany(ids);
+      cache.notes = undefined; // Clear cache
+    } catch (error) {
+      console.error('Error deleting notes:', error);
+      throw error;
+    }
+  }
+
   // Todo operations
   static async getTodos(): Promise<Todo[]> {
     try {
@@ -469,6 +489,16 @@ export class Storage {
     }
   }
 
+  static async deleteTodos(ids: string[]): Promise<void> {
+    try {
+      await todoApi.deleteMany(ids);
+      cache.todos = undefined; // Clear cache
+    } catch (error) {
+      console.error('Error deleting todos:', error);
+      throw error;
+    }
+  }
+
   // Interview Question operations
   static async getInterviewQuestions(): Promise<InterviewQuestion[]> {
     try {
@@ -510,6 +540,16 @@ export class Storage {
       cache.interview_questions = undefined; // Clear cache
     } catch (error) {
       console.error('Error deleting interview question:', error);
+      throw error;
+    }
+  }
+
+  static async deleteInterviewQuestions(ids: string[]): Promise<void> {
+    try {
+      await interviewQuestionApi.deleteMany(ids);
+      cache.interview_questions = undefined; // Clear cache
+    } catch (error) {
+      console.error('Error deleting interview questions:', error);
       throw error;
     }
   }

@@ -16,6 +16,8 @@ export default function InterviewQuestionsPage() {
   const [practiceMode, setPracticeMode] = useState(false);
   const [currentPracticeIndex, setCurrentPracticeIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState<Partial<InterviewQuestion>>({
     question: "",
     answer: "",
@@ -79,9 +81,45 @@ export default function InterviewQuestionsPage() {
       try {
         await Storage.deleteInterviewQuestion(id);
         setQuestions(questions.filter((q) => q.id !== id));
+        setSelectedIds((prev) => prev.filter((item) => item !== id));
       } catch (error) {
         console.error('Failed to delete question:', error);
         alert('Failed to delete question. Please try again.');
+      }
+    }
+  };
+
+  // Selection handlers
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = (currentQuestions: InterviewQuestion[]) => {
+    const currentIds = currentQuestions.map((q) => q.id);
+    const allSelected = currentIds.length > 0 && currentIds.every((id) => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !currentIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...currentIds])));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    const count = selectedIds.length;
+    if (confirm(`Are you sure you want to delete ${count} selected question${count > 1 ? "s" : ""}?`)) {
+      try {
+        setIsDeleting(true);
+        await Storage.deleteInterviewQuestions(selectedIds);
+        setQuestions(questions.filter((q) => !selectedIds.includes(q.id)));
+        setSelectedIds([]);
+      } catch (error) {
+        console.error('Failed to delete selected questions:', error);
+        alert('Failed to delete selected questions. Please try again.');
+      } finally {
+        setIsDeleting(false);
       }
     }
   };
@@ -550,6 +588,37 @@ export default function InterviewQuestionsPage() {
         </div>
       )}
 
+      {/* Dynamic Multi-Select Action Toolbar */}
+      {selectedIds.length > 0 && !practiceMode && (
+        <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm transition-all animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center justify-center bg-blue-600 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+              {selectedIds.length}
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+              {selectedIds.length === 1 ? "1 question selected" : `${selectedIds.length} questions selected`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedIds([])}
+              disabled={isDeleting}
+              className="px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 border border-gray-300 dark:border-slate-600 rounded-lg transition-colors"
+            >
+              Deselect All
+            </button>
+            <button
+              onClick={handleDeleteSelected}
+              disabled={isDeleting}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg transition-colors shadow-sm"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeleting ? "Deleting..." : `Delete Selected (${selectedIds.length})`}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Questions List */}
       {!practiceMode && (
         <>
@@ -562,72 +631,104 @@ export default function InterviewQuestionsPage() {
             <>
               {/* Mobile Card View */}
               <div className="block sm:hidden space-y-3">
-                {filteredQuestions.map((question) => (
-                  <div
-                    key={question.id}
-                    className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 border border-gray-200 dark:border-slate-700"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2 line-clamp-2">
-                          {question.question}
-                        </h3>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded text-xs ${
-                            question.category === "behavioral" 
-                              ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300"
-                              : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
-                          }`}>
-                            {question.category === "behavioral" ? "Behavioral" : "Technical"}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded text-xs ${getDifficultyColor(question.difficulty)}`}>
-                            {question.difficulty}
-                          </span>
-                          <span className="px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                            {getTechnologyLabel(question.technology)}
-                          </span>
-                          {question.timesPracticed > 0 && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                              <BookOpen className="h-3 w-3" />
-                              {question.timesPracticed}x
-                            </span>
-                          )}
+                {filteredQuestions.map((question) => {
+                  const isSelected = selectedIds.includes(question.id);
+                  return (
+                    <div
+                      key={question.id}
+                      className={`bg-white dark:bg-slate-800 rounded-lg shadow p-4 border transition-colors ${
+                        isSelected
+                          ? "border-blue-500 bg-blue-50/40 dark:bg-blue-950/20"
+                          : "border-gray-200 dark:border-slate-700"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2 gap-2">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelect(question.id)}
+                            className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                            aria-label={`Select ${question.question}`}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2 line-clamp-2">
+                              {question.question}
+                            </h3>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`px-2 py-0.5 rounded text-xs ${
+                                question.category === "behavioral" 
+                                  ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300"
+                                  : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                              }`}>
+                                {question.category === "behavioral" ? "Behavioral" : "Technical"}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded text-xs ${getDifficultyColor(question.difficulty)}`}>
+                                {question.difficulty}
+                              </span>
+                              <span className="px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                {getTechnologyLabel(question.technology)}
+                              </span>
+                              {question.timesPracticed > 0 && (
+                                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                  <BookOpen className="h-3 w-3" />
+                                  {question.timesPracticed}x
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0 ml-2">
+                          <button
+                            onClick={() => handleView(question)}
+                            className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                            title="View"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(question)}
+                            className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
+                            title="Edit"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(question.id)}
+                            className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex gap-1 flex-shrink-0 ml-2">
-                        <button
-                          onClick={() => handleView(question)}
-                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-                          title="View"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleEdit(question)}
-                          className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
-                          title="Edit"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(question.id)}
-                          className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Desktop Table View */}
-              <div className="hidden sm:block bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden transition-colors">
+              <div className="hidden sm:block bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden transition-colors border border-gray-200 dark:border-slate-700">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
                     <thead className="bg-gray-50 dark:bg-slate-900">
                       <tr>
+                        <th className="w-12 px-3.5 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={filteredQuestions.length > 0 && filteredQuestions.every((q) => selectedIds.includes(q.id))}
+                            ref={(el) => {
+                              if (el) {
+                                const allSel = filteredQuestions.length > 0 && filteredQuestions.every((q) => selectedIds.includes(q.id));
+                                const someSel = filteredQuestions.some((q) => selectedIds.includes(q.id));
+                                el.indeterminate = someSel && !allSel;
+                              }
+                            }}
+                            onChange={() => handleSelectAll(filteredQuestions)}
+                            className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500 cursor-pointer"
+                            aria-label="Select all questions"
+                          />
+                        </th>
                         <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Question
                         </th>
@@ -640,89 +741,109 @@ export default function InterviewQuestionsPage() {
                         <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">
                           Practiced
                         </th>
-                        <th className="px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="sticky right-0 z-20 w-24 px-3.5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 shadow-[-6px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[-6px_0_8px_-2px_rgba(0,0,0,0.4)]">
                           Actions
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
-                      {filteredQuestions.map((question) => (
-                        <tr
-                          key={question.id}
-                          className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-                        >
-                          <td className="px-4 lg:px-6 py-4">
-                            <div
-                              onClick={() => handleView(question)}
-                              className="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors max-w-md truncate"
-                              title="Click to view full question"
-                            >
-                              {question.question}
-                            </div>
-                          </td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-1 rounded text-xs ${
-                                question.category === "behavioral" 
-                                  ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300"
-                                  : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
-                              }`}>
-                                {question.category === "behavioral" ? "Behavioral" : "Technical"}
-                              </span>
-                              <span className="px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                                {getTechnologyLabel(question.technology)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                            <span className={`px-2 py-1 rounded text-xs ${getDifficultyColor(question.difficulty)}`}>
-                              {question.difficulty}
-                            </span>
-                          </td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
-                            <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                              {question.timesPracticed > 0 ? (
-                                <>
-                                  <BookOpen className="h-4 w-4" />
-                                  {question.timesPracticed}x
-                                  {question.lastPracticedDate && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                                      ({new Date(question.lastPracticedDate).toLocaleDateString()})
-                                    </span>
-                                  )}
-                                </>
-                              ) : (
-                                <span className="text-gray-400 dark:text-gray-500">Never</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex items-center justify-end gap-1 sm:gap-2">
-                              <button
+                      {filteredQuestions.map((question) => {
+                        const isSelected = selectedIds.includes(question.id);
+                        return (
+                          <tr
+                            key={question.id}
+                            className={`group transition-colors ${
+                              isSelected ? "bg-blue-50/60 dark:bg-blue-950/30" : "hover:bg-gray-50 dark:hover:bg-slate-700/60"
+                            }`}
+                          >
+                            <td className="w-12 px-3.5 py-4 whitespace-nowrap text-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleToggleSelect(question.id)}
+                                className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500 cursor-pointer"
+                                aria-label={`Select ${question.question}`}
+                              />
+                            </td>
+                            <td className="px-4 lg:px-6 py-4">
+                              <div
                                 onClick={() => handleView(question)}
-                                className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-                                title="View"
+                                className="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors max-w-md truncate"
+                                title="Click to view full question"
                               >
-                                <Eye className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleEdit(question)}
-                                className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
-                                title="Edit"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(question.id)}
-                                className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-                                title="Delete"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                                {question.question}
+                              </div>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2 py-1 rounded text-xs ${
+                                  question.category === "behavioral" 
+                                    ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300"
+                                    : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                                }`}>
+                                  {question.category === "behavioral" ? "Behavioral" : "Technical"}
+                                </span>
+                                <span className="px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                  {getTechnologyLabel(question.technology)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                              <span className={`px-2 py-1 rounded text-xs ${getDifficultyColor(question.difficulty)}`}>
+                                {question.difficulty}
+                              </span>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                              <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                {question.timesPracticed > 0 ? (
+                                  <>
+                                    <BookOpen className="h-4 w-4" />
+                                    {question.timesPracticed}x
+                                    {question.lastPracticedDate && (
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                                        ({new Date(question.lastPracticedDate).toLocaleDateString()})
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="text-gray-400 dark:text-gray-500">Never</span>
+                                )}
+                              </div>
+                            </td>
+                            <td
+                              className={`sticky right-0 z-10 w-24 px-3.5 py-4 whitespace-nowrap text-right text-sm font-medium border-l border-gray-200 dark:border-slate-700 shadow-[-6px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[-6px_0_8px_-2px_rgba(0,0,0,0.4)] transition-colors ${
+                                isSelected
+                                  ? "bg-blue-50 dark:bg-slate-800"
+                                  : "bg-white dark:bg-slate-800 group-hover:bg-gray-50 dark:group-hover:bg-slate-700"
+                              }`}
+                            >
+                              <div className="flex items-center justify-end gap-1 sm:gap-2">
+                                <button
+                                  onClick={() => handleView(question)}
+                                  className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                                  title="View"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleEdit(question)}
+                                  className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
+                                  title="Edit"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(question.id)}
+                                  className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, BookOpen, CheckCircle, Clock, Circle } from "lucide-react";
+import { Plus, Edit, Trash2, BookOpen, CheckCircle, Clock, Circle, Eye, X } from "lucide-react";
 import { Storage, STORAGE_KEYS } from "@/lib/storage";
 import { LearningItem, LearningCategory } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -11,6 +11,7 @@ export default function LearningPage() {
   const [items, setItems] = useState<LearningItem[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewingItem, setViewingItem] = useState<LearningItem | null>(null);
   const [filterCategory, setFilterCategory] = useState<LearningCategory | "all">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "not-started" | "in-progress" | "completed">("all");
   const [formData, setFormData] = useState<Partial<LearningItem>>({
@@ -299,7 +300,12 @@ export default function LearningPage() {
                         {getStatusIcon(item.status)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">{item.title}</h3>
+                        <h3
+                          onClick={() => setViewingItem(item)}
+                          className="font-semibold text-sm text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        >
+                          {item.title}
+                        </h3>
                         <div className="flex flex-wrap items-center gap-2 mt-2">
                           <span className="px-2 py-0.5 bg-gray-100 dark:bg-slate-700 rounded text-xs text-gray-700 dark:text-gray-300">
                             {getCategoryLabel(item.category)}
@@ -327,10 +333,17 @@ export default function LearningPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-col gap-1 flex-shrink-0">
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => setViewingItem(item)}
+                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                          title="Preview details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => handleEdit(item)}
-                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                          className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                           title="Edit"
                         >
                           <Edit className="h-4 w-4" />
@@ -345,7 +358,10 @@ export default function LearningPage() {
                       </div>
                     </div>
                     {item.notes && (
-                      <div className="mt-2 p-2 bg-gray-50 dark:bg-slate-700 rounded text-xs text-gray-700 dark:text-gray-300 line-clamp-3">
+                      <div
+                        onClick={() => setViewingItem(item)}
+                        className="mt-2 p-2 bg-gray-50 dark:bg-slate-700/60 rounded text-xs text-gray-700 dark:text-gray-300 line-clamp-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                      >
                         {item.notes}
                       </div>
                     )}
@@ -360,7 +376,12 @@ export default function LearningPage() {
                       <div className="flex items-start gap-3 flex-1">
                         {getStatusIcon(item.status)}
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">{item.title}</h3>
+                          <h3
+                            onClick={() => setViewingItem(item)}
+                            className="font-semibold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                          >
+                            {item.title}
+                          </h3>
                           <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
                             <span className="px-2 py-1 bg-gray-100 dark:bg-slate-700 rounded text-xs">
                               {getCategoryLabel(item.category)}
@@ -385,10 +406,17 @@ export default function LearningPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setViewingItem(item)}
+                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                          title="Preview details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => handleEdit(item)}
-                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                          className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                           title="Edit"
                         >
                           <Edit className="h-4 w-4" />
@@ -403,7 +431,10 @@ export default function LearningPage() {
                       </div>
                     </div>
                     {item.notes && (
-                      <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-700 rounded text-sm text-gray-700 dark:text-gray-300">
+                      <div
+                        onClick={() => setViewingItem(item)}
+                        className="mt-3 p-3 bg-gray-50 dark:bg-slate-700/60 rounded text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                      >
                         {item.notes}
                       </div>
                     )}
@@ -412,6 +443,96 @@ export default function LearningPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* View / Preview Modal - Just like Notes */}
+      {viewingItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700">
+              <div className="flex items-center gap-3 pr-2 min-w-0">
+                <div className="flex-shrink-0">
+                  {getStatusIcon(viewingItem.status)}
+                </div>
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100 break-words">
+                  {viewingItem.title}
+                </h2>
+              </div>
+              <button
+                onClick={() => setViewingItem(null)}
+                className="p-2 flex-shrink-0 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                title="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+              {/* Badges / Meta */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 rounded text-xs font-medium">
+                  {getCategoryLabel(viewingItem.category)}
+                </span>
+                <span
+                  className={`px-2.5 py-1 rounded text-xs font-medium ${
+                    viewingItem.status === "completed"
+                      ? "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300"
+                      : viewingItem.status === "in-progress"
+                      ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300"
+                      : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300"
+                  }`}
+                >
+                  Status: {viewingItem.status === "completed" ? "Completed" : viewingItem.status === "in-progress" ? "In Progress" : "Not Started"}
+                </span>
+                {viewingItem.startedDate && (
+                  <span className="text-xs text-gray-600 dark:text-gray-400">
+                    Started: {formatDate(viewingItem.startedDate)}
+                  </span>
+                )}
+                {viewingItem.completedDate && (
+                  <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                    Completed: {formatDate(viewingItem.completedDate)}
+                  </span>
+                )}
+              </div>
+
+              {/* Notes content */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  Notes & Details:
+                </h3>
+                {viewingItem.notes ? (
+                  <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words bg-gray-50 dark:bg-slate-900 p-3 sm:p-4 rounded-lg border border-gray-100 dark:border-slate-800">
+                    {viewingItem.notes}
+                  </div>
+                ) : (
+                  <p className="text-sm italic text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-900 p-4 rounded-lg">
+                    No notes entered for this topic yet.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-end gap-2 p-4 sm:p-6 border-t border-gray-200 dark:border-slate-700">
+              <button
+                onClick={() => {
+                  handleEdit(viewingItem);
+                  setViewingItem(null);
+                }}
+                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600 flex items-center justify-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit Item
+              </button>
+              <button
+                onClick={() => setViewingItem(null)}
+                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -224,14 +224,15 @@ export default function ContactsPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Notes
               </label>
               <textarea
                 value={formData.notes || ""}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Add any notes about this contact..."
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
             <div className="flex items-center">
@@ -240,7 +241,7 @@ export default function ContactsPage() {
                 id="isReference"
                 checked={formData.isReference}
                 onChange={(e) => setFormData({ ...formData, isReference: e.target.checked })}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded"
               />
               <label htmlFor="isReference" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                 This is a reference contact
@@ -249,7 +250,7 @@ export default function ContactsPage() {
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 {editingId ? "Update" : "Add"} Contact
               </button>
@@ -259,7 +260,7 @@ export default function ContactsPage() {
                   setShowForm(false);
                   setEditingId(null);
                 }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
               >
                 Cancel
               </button>
@@ -359,13 +360,15 @@ function ContactCard({
         <div className="flex gap-1">
           <button
             onClick={() => onEdit(contact)}
-            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+            className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+            title="Edit contact"
           >
             <Edit className="h-4 w-4" />
           </button>
           <button
             onClick={() => onDelete(contact.id)}
-            className="p-1 text-red-600 hover:bg-red-50 rounded"
+            className="p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+            title="Delete contact"
           >
             <Trash2 className="h-4 w-4" />
           </button>

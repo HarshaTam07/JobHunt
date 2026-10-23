@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, ChevronLeft, ChevronRight, X, Trash2 } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X, Trash2, Pencil, Check } from "lucide-react";
 import { Storage } from "@/lib/storage";
 import { Habit } from "@/types";
 
@@ -11,6 +11,8 @@ export default function HabitTrackerPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newHabitName, setNewHabitName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
+  const [editHabitName, setEditHabitName] = useState("");
 
   // Load habits from database
   useEffect(() => {
@@ -97,6 +99,33 @@ export default function HabitTrackerPage() {
         alert('Failed to create habit. Please try again.');
       }
     }
+  };
+
+  // Start editing habit name
+  const startEditHabit = (habit: Habit) => {
+    setEditingHabitId(habit.id);
+    setEditHabitName(habit.name);
+  };
+
+  // Save habit name
+  const handleUpdateHabitName = async (id: string) => {
+    const trimmed = editHabitName.trim();
+    if (!trimmed) return;
+    try {
+      const updated = await Storage.updateHabit(id, { name: trimmed });
+      setHabits(habits.map(h => h.id === id ? updated : h));
+      setEditingHabitId(null);
+      setEditHabitName("");
+    } catch (error) {
+      console.error('Failed to update habit:', error);
+      alert('Failed to update habit name. Please try again.');
+    }
+  };
+
+  // Cancel editing
+  const cancelEditHabit = () => {
+    setEditingHabitId(null);
+    setEditHabitName("");
   };
 
   // Delete habit
@@ -244,17 +273,57 @@ export default function HabitTrackerPage() {
                   key={habit.id}
                   className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 sm:p-4 md:p-6"
                 >
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 flex-1 pr-2">
-                      {habit.name}
-                    </h3>
-                    <button
-                      onClick={() => handleDeleteHabit(habit.id)}
-                      className="p-2.5 sm:p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors touch-manipulation flex-shrink-0"
-                      aria-label="Delete habit"
-                    >
-                      <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
-                    </button>
+                  <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+                    {editingHabitId === habit.id ? (
+                      <div className="flex-1 flex items-center gap-2 pr-2">
+                        <input
+                          type="text"
+                          value={editHabitName}
+                          onChange={(e) => setEditHabitName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleUpdateHabitName(habit.id);
+                            if (e.key === "Escape") cancelEditHabit();
+                          }}
+                          className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleUpdateHabitName(habit.id)}
+                          disabled={!editHabitName.trim()}
+                          className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors touch-manipulation flex-shrink-0 disabled:opacity-50"
+                          aria-label="Save"
+                        >
+                          <Check className="h-5 w-5 sm:h-4 sm:w-4" />
+                        </button>
+                        <button
+                          onClick={cancelEditHabit}
+                          className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors touch-manipulation flex-shrink-0"
+                          aria-label="Cancel"
+                        >
+                          <X className="h-5 w-5 sm:h-4 sm:w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 flex-1 pr-2 truncate">
+                          {habit.name}
+                        </h3>
+                        <button
+                          onClick={() => startEditHabit(habit)}
+                          className="p-2.5 sm:p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors touch-manipulation flex-shrink-0"
+                          aria-label="Edit habit name"
+                        >
+                          <Pencil className="h-5 w-5 sm:h-4 sm:w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteHabit(habit.id)}
+                          className="p-2.5 sm:p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors touch-manipulation flex-shrink-0"
+                          aria-label="Delete habit"
+                        >
+                          <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
+                        </button>
+                      </>
+                    )}
                   </div>
 
                   {/* Checkboxes - Fixed Grid (Mobile & Desktop) */}

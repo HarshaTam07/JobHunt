@@ -11,6 +11,8 @@ export default function TodosPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "completed">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState<Partial<Todo>>({
     title: "",
     description: "",
@@ -69,9 +71,45 @@ export default function TodosPage() {
       try {
         await Storage.deleteTodo(id);
         setTodos(todos.filter((todo) => todo.id !== id));
+        setSelectedIds((prev) => prev.filter((item) => item !== id));
       } catch (error) {
         console.error('Failed to delete todo:', error);
         alert('Failed to delete todo. Please try again.');
+      }
+    }
+  };
+
+  // Selection handlers
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = (currentTodos: Todo[]) => {
+    const currentIds = currentTodos.map((t) => t.id);
+    const allSelected = currentIds.length > 0 && currentIds.every((id) => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !currentIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...currentIds])));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    const count = selectedIds.length;
+    if (confirm(`Are you sure you want to delete ${count} selected todo${count > 1 ? "s" : ""}?`)) {
+      try {
+        setIsDeleting(true);
+        await Storage.deleteTodos(selectedIds);
+        setTodos(todos.filter((todo) => !selectedIds.includes(todo.id)));
+        setSelectedIds([]);
+      } catch (error) {
+        console.error('Failed to delete selected todos:', error);
+        alert('Failed to delete selected todos. Please try again.');
+      } finally {
+        setIsDeleting(false);
       }
     }
   };
@@ -327,6 +365,37 @@ export default function TodosPage() {
         </div>
       )}
 
+      {/* Dynamic Multi-Select Action Toolbar */}
+      {selectedIds.length > 0 && (
+        <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm transition-all animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center justify-center bg-blue-600 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+              {selectedIds.length}
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+              {selectedIds.length === 1 ? "1 todo selected" : `${selectedIds.length} todos selected`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedIds([])}
+              disabled={isDeleting}
+              className="px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 border border-gray-300 dark:border-slate-600 rounded-lg transition-colors"
+            >
+              Deselect All
+            </button>
+            <button
+              onClick={handleDeleteSelected}
+              disabled={isDeleting}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg transition-colors shadow-sm"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeleting ? "Deleting..." : `Delete Selected (${selectedIds.length})`}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Todos List */}
       {sortedTodos.length === 0 && todos.length > 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-8 sm:p-12 text-center transition-colors">
@@ -346,71 +415,86 @@ export default function TodosPage() {
         <>
           {/* Mobile Card View */}
           <div className="block sm:hidden space-y-3">
-            {sortedTodos.map((todo) => (
-              <div
-                key={todo.id}
-                className={`bg-white dark:bg-slate-800 rounded-lg shadow p-4 border-l-4 transition-colors ${
-                  todo.completed
-                    ? "border-gray-300 dark:border-gray-600 opacity-75"
-                    : todo.priority === "high"
-                    ? "border-red-500"
-                    : todo.priority === "medium"
-                    ? "border-yellow-500"
-                    : "border-green-500"
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <button
-                    onClick={() => handleToggleComplete(todo.id, todo.completed)}
-                    className="mt-0.5 flex-shrink-0"
-                  >
-                    {todo.completed ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    ) : (
-                      <Circle className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                    )}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <h3 className={`font-medium text-gray-900 dark:text-gray-100 ${todo.completed ? "line-through" : ""}`}>
-                      {todo.title}
-                    </h3>
-                    {todo.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-                        {todo.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-3 mt-2 flex-wrap">
-                      <span className={`px-2 py-0.5 rounded text-xs flex items-center gap-1 ${getPriorityColor(todo.priority)}`}>
-                        {getPriorityIcon(todo.priority)}
-                        {todo.priority}
-                      </span>
-                      {todo.dueDate && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(todo.dueDate).toLocaleDateString()}
-                        </span>
+            {sortedTodos.map((todo) => {
+              const isSelected = selectedIds.includes(todo.id);
+              return (
+                <div
+                  key={todo.id}
+                  className={`bg-white dark:bg-slate-800 rounded-lg shadow p-4 border-l-4 transition-colors ${
+                    isSelected
+                      ? "ring-2 ring-blue-500 bg-blue-50/40 dark:bg-blue-950/20"
+                      : ""
+                  } ${
+                    todo.completed
+                      ? "border-gray-300 dark:border-gray-600 opacity-75"
+                      : todo.priority === "high"
+                      ? "border-red-500"
+                      : todo.priority === "medium"
+                      ? "border-yellow-500"
+                      : "border-green-500"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleToggleSelect(todo.id)}
+                      className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                      aria-label={`Select ${todo.title}`}
+                    />
+                    <button
+                      onClick={() => handleToggleComplete(todo.id, todo.completed)}
+                      className="mt-0.5 flex-shrink-0"
+                      aria-label={todo.completed ? "Mark incomplete" : "Mark complete"}
+                    >
+                      {todo.completed ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                       )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`font-medium text-gray-900 dark:text-gray-100 ${todo.completed ? "line-through" : ""}`}>
+                        {todo.title}
+                      </h3>
+                      {todo.description && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                          {todo.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded text-xs flex items-center gap-1 ${getPriorityColor(todo.priority)}`}>
+                          {getPriorityIcon(todo.priority)}
+                          {todo.priority}
+                        </span>
+                        {todo.dueDate && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(todo.dueDate).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => handleEdit(todo)}
+                        className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
+                        title="Edit"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(todo.id)}
+                        className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button
-                      onClick={() => handleEdit(todo)}
-                      className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
-                      title="Edit"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(todo.id)}
-                      className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Desktop Table View */}
@@ -419,6 +503,22 @@ export default function TodosPage() {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
                 <thead className="bg-gray-50 dark:bg-slate-900">
                   <tr>
+                    <th className="w-12 px-4 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        checked={sortedTodos.length > 0 && sortedTodos.every((t) => selectedIds.includes(t.id))}
+                        ref={(el) => {
+                          if (el) {
+                            const allSel = sortedTodos.length > 0 && sortedTodos.every((t) => selectedIds.includes(t.id));
+                            const someSel = sortedTodos.some((t) => selectedIds.includes(t.id));
+                            el.indeterminate = someSel && !allSel;
+                          }
+                        }}
+                        onChange={() => handleSelectAll(sortedTodos)}
+                        className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500 cursor-pointer"
+                        aria-label="Select all todos"
+                      />
+                    </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12">
                       Status
                     </th>
@@ -434,79 +534,98 @@ export default function TodosPage() {
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">
                       Due Date
                     </th>
-                    <th className="px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="sticky right-0 z-20 w-24 px-3.5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 shadow-[-6px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[-6px_0_8px_-2px_rgba(0,0,0,0.4)]">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
-                  {sortedTodos.map((todo) => (
-                    <tr
-                      key={todo.id}
-                      className={`hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${
-                        todo.completed ? "opacity-75" : ""
-                      }`}
-                    >
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleToggleComplete(todo.id, todo.completed)}
-                          className="flex-shrink-0"
+                  {sortedTodos.map((todo) => {
+                    const isSelected = selectedIds.includes(todo.id);
+                    return (
+                      <tr
+                        key={todo.id}
+                        className={`group transition-colors ${
+                          isSelected ? "bg-blue-50/60 dark:bg-blue-950/30" : "hover:bg-gray-50 dark:hover:bg-slate-700/60"
+                        } ${todo.completed ? "opacity-75" : ""}`}
+                      >
+                        <td className="w-12 px-4 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelect(todo.id)}
+                            className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500 cursor-pointer"
+                            aria-label={`Select ${todo.title}`}
+                          />
+                        </td>
+                        <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => handleToggleComplete(todo.id, todo.completed)}
+                            className="flex-shrink-0"
+                            aria-label={todo.completed ? "Mark incomplete" : "Mark complete"}
+                          >
+                            {todo.completed ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors" />
+                            )}
+                          </button>
+                        </td>
+                        <td className="px-4 lg:px-6 py-4">
+                          <div className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${todo.completed ? "line-through" : ""}`}>
+                            {todo.title}
+                          </div>
+                        </td>
+                        <td className="px-4 lg:px-6 py-4 hidden md:table-cell">
+                          <div className="text-sm text-gray-600 dark:text-gray-400 max-w-md truncate">
+                            {todo.description || "-"}
+                          </div>
+                        </td>
+                        <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 w-fit ${getPriorityColor(todo.priority)}`}>
+                            {getPriorityIcon(todo.priority)}
+                            {todo.priority}
+                          </span>
+                        </td>
+                        <td className="px-4 lg:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                          <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                            {todo.dueDate ? (
+                              <>
+                                <Calendar className="h-4 w-4" />
+                                {new Date(todo.dueDate).toLocaleDateString()}
+                              </>
+                            ) : (
+                              "-"
+                            )}
+                          </div>
+                        </td>
+                        <td
+                          className={`sticky right-0 z-10 w-24 px-3.5 py-4 whitespace-nowrap text-right text-sm font-medium border-l border-gray-200 dark:border-slate-700 shadow-[-6px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[-6px_0_8px_-2px_rgba(0,0,0,0.4)] transition-colors ${
+                            isSelected
+                              ? "bg-blue-50 dark:bg-slate-800"
+                              : "bg-white dark:bg-slate-800 group-hover:bg-gray-50 dark:group-hover:bg-slate-700"
+                          }`}
                         >
-                          {todo.completed ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                          ) : (
-                            <Circle className="h-5 w-5 text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors" />
-                          )}
-                        </button>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4">
-                        <div className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${todo.completed ? "line-through" : ""}`}>
-                          {todo.title}
-                        </div>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 hidden md:table-cell">
-                        <div className="text-sm text-gray-600 dark:text-gray-400 max-w-md truncate">
-                          {todo.description || "-"}
-                        </div>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 w-fit ${getPriorityColor(todo.priority)}`}>
-                          {getPriorityIcon(todo.priority)}
-                          {todo.priority}
-                        </span>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
-                        <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                          {todo.dueDate ? (
-                            <>
-                              <Calendar className="h-4 w-4" />
-                              {new Date(todo.dueDate).toLocaleDateString()}
-                            </>
-                          ) : (
-                            "-"
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end gap-1 sm:gap-2">
-                          <button
-                            onClick={() => handleEdit(todo)}
-                            className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
-                            title="Edit"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(todo.id)}
-                            className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          <div className="flex items-center justify-end gap-1 sm:gap-2">
+                            <button
+                              onClick={() => handleEdit(todo)}
+                              className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
+                              title="Edit"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(todo.id)}
+                              className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
